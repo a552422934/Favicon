@@ -70,25 +70,6 @@ export function throttle(func, limit) {
 }
 
 /**
- * 显示加载状态
- * @param {string} message - 加载消息
- */
-export function setLoadingState(message) {
-  document.title = `⏳ ${message}`;
-}
-
-/**
- * 显示就绪状态
- * @param {string} [defaultTitle] - 默认标题
- */
-export function setReadyState(defaultTitle = 'Free IT Videos & ProgramHub') {
-  document.title = '✅ 就绪';
-  setTimeout(() => {
-    document.title = defaultTitle;
-  }, 2000);
-}
-
-/**
  * 显示错误信息在页面标题或控制台
  * @param {string} message - 错误信息
  * @param {boolean} [showToast=true] - 是否显示 toast 提示
