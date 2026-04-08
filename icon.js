@@ -376,7 +376,7 @@ class Icon {
 
           if (timestamp - this.lastCameraFrame >= this.cameraFrameInterval) {
             if (this.video.readyState >= this.video.HAVE_CURRENT_DATA) {
-              this.videoToImageByFilter();
+              this.videoToImage();
             }
             this.lastCameraFrame = timestamp;
           }
