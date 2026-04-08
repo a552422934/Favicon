@@ -26,56 +26,6 @@
             margin-bottom: 30px;
         }
 
-        .mode-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .mode-button {
-            padding: 15px 20px;
-            font-size: 18px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-            color: white;
-            font-weight: bold;
-        }
-
-        .mode-button:hover {
-            transform: translateY(-2px);
-        }
-
-        .mode-button:active {
-            transform: translateY(0);
-        }
-
-        #video-btn {
-            background-color: #4CAF50;
-        }
-
-        #video-btn:hover {
-            background-color: #45a049;
-        }
-
-        #camera-btn {
-            background-color: #2196F3;
-        }
-
-        #camera-btn:hover {
-            background-color: #0b7dda;
-        }
-
-        #snake-btn {
-            background-color: #ff9800;
-        }
-
-        #snake-btn:hover {
-            background-color: #e68a00;
-        }
-
         .instructions {
             text-align: left;
             margin-top: 30px;
@@ -204,12 +154,33 @@
 <body>
     <div class="container">
         <h1>Favicon 演示</h1>
-        <p>在浏览器 favicon 中创建交互式内容 - 视频播放、摄像头监控、贪食蛇游戏</p>
+        <p>在浏览器 favicon 中 - 播放视频、摄像头监控、玩贪食蛇游戏</p>
 
-        <div class="mode-buttons">
-            <button id="video-btn" class="mode-button">视频模式</button>
-            <button id="camera-btn" class="mode-button">摄像头模式</button>
-            <button id="snake-btn" class="mode-button">贪食蛇游戏</button>
+        <div class="bookmark-section">
+            <h3>🔖 拖拽到书签栏（点击任意网页即可使用）</h3>
+            <p style="color: #666; font-size: 14px;">将下方链接拖拽到浏览器书签栏，即可在任意网页快速启动功能</p>
+            
+        
+                    
+            <div class="bookmark-list">
+           
+                
+                <!-- 在线使用版 -->
+                <div class="bookmark-item" style="border-left-color: #2196F3; margin-top: 10px;">
+                    <strong>📺 视频模式</strong>
+                    <a href="javascript:(function(){window.ictype='video';window.vurl=undefined;var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js?v=2';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" >视频模式</a>
+                </div>
+        
+                <div class="bookmark-item" style="border-left-color: #2196F3;">
+                    <strong>📷 摄像头模式</strong>
+                    <a href="javascript:(function(){window.ictype='camera';var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js?v=2';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" >摄像头模式</a>
+                </div>
+        
+                <div class="bookmark-item" style="border-left-color: #2196F3;">
+                    <strong>🐍 贪吃蛇游戏</strong>
+                    <a href="javascript:(function(){window.ictype='snake';var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js?v=2';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" >贪吃蛇游戏</a>
+                </div>
+            </div>
         </div>
 
         <div id="status" class="status"></div>
@@ -221,173 +192,11 @@
                 <li><strong>摄像头模式</strong>：在 favicon 中显示摄像头画面（需要摄像头权限和 HTTPS 环境）</li>
                 <li><strong>贪吃蛇游戏</strong>：在 favicon 中玩贪吃蛇游戏，使用方向键控制，最高分保存在本地</li>
             </ul>
-            <p><em>注意：摄像头功能需要在 HTTPS 环境或 localhost 下运行</em></p>
-        </div>
-        
-        <div class="bookmark-section">
-            <h3>🔖 拖拽到书签栏（点击任意网页即可使用）</h3>
-            <p style="color: #666; font-size: 14px;">将下方链接拖拽到浏览器书签栏，即可在任意网页快速启动功能</p>
-            
-            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-                <strong>💡 提示：</strong>
-                <ul style="margin: 8px 0 0 20px; font-size: 13px; color: #856404;">
-                    <li><strong>本地开发版</strong>：适合在本地项目中使用，需要确保 icon.js 文件存在</li>
-                    <li><strong>在线使用版</strong>：适合在任何网站使用，通过 CDN 加载（需联网）</li>
-                </ul>
-            </div>
-                    
-            <div class="bookmark-list">
-                <!-- 本地开发版 -->
-                <div class="bookmark-item" style="border-left-color: #4CAF50;">
-                    <strong>📺 视频模式 - 本地开发版</strong>
-                    <a href="javascript:(function(){window.ictype='video';window.vurl=undefined;var s=document.createElement('script');s.type='module';s.textContent=&quot;import './icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true">视频模式（本地）</a>
-                    <div class="bookmark-tip">💡 直接拖拽到书签栏 | 默认使用 lol.mp4 | 仅本地有效</div>
-                </div>
-        
-                <div class="bookmark-item" style="border-left-color: #4CAF50;">
-                    <strong>📷 摄像头模式 - 本地开发版</strong>
-                    <a href="javascript:(function(){window.ictype='camera';var s=document.createElement('script');s.type='module';s.textContent=&quot;import './icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true">摄像头模式（本地）</a>
-                    <div class="bookmark-tip">💡 直接拖拽到书签栏 | 需要 HTTPS 环境 | 仅本地有效</div>
-                </div>
-        
-                <div class="bookmark-item" style="border-left-color: #4CAF50;">
-                    <strong>🐍 贪吃蛇游戏 - 本地开发版</strong>
-                    <a href="javascript:(function(){window.ictype='snake';var s=document.createElement('script');s.type='module';s.textContent=&quot;import './icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true">贪吃蛇游戏（本地）</a>
-                    <div class="bookmark-tip">💡 直接拖拽到书签栏 | 方向键控制 | 仅本地有效</div>
-                </div>
-                
-                <!-- 在线使用版 -->
-                <div class="bookmark-item" style="border-left-color: #2196F3; margin-top: 10px;">
-                    <strong>📺 视频模式 - 在线使用版</strong>
-                    <a href="javascript:(function(){window.ictype='video';window.vurl=undefined;var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" style="background: linear-gradient(135deg, #2196F3 0%, #0b7dda 100%);">视频模式（在线）</a>
-                    <div class="bookmark-tip">💡 可在任何网站使用 | 需要网络连接</div>
-                </div>
-        
-                <div class="bookmark-item" style="border-left-color: #2196F3;">
-                    <strong>📷 摄像头模式 - 在线使用版</strong>
-                    <a href="javascript:(function(){window.ictype='camera';var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" style="background: linear-gradient(135deg, #2196F3 0%, #0b7dda 100%);">摄像头模式（在线）</a>
-                    <div class="bookmark-tip">💡 可在任何网站使用 | 需要 HTTPS + 网络</div>
-                </div>
-        
-                <div class="bookmark-item" style="border-left-color: #2196F3;">
-                    <strong>🐍 贪吃蛇游戏 - 在线使用版</strong>
-                    <a href="javascript:(function(){window.ictype='snake';var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" style="background: linear-gradient(135deg, #2196F3 0%, #0b7dda 100%);">贪吃蛇游戏（在线）</a>
-                    <div class="bookmark-tip">💡 可在任何网站使用 | 方向键控制</div>
-                </div>
-            </div>
+            <p><em>注意：将下方书签拖拽到浏览器书签栏后，可在任意网页点击使用</em></p>
         </div>
     </div>
 
-    <script type="module">
-        // 首先设置模式
-        window.ictype = 'video'; // 默认模式，可以通过按钮切换
-        
-        // 然后导入 icon.js，它会自动加载 game.js 并初始化
-        import './icon.js';
-    </script>
     
-    <script>
-        // 显示状态消息
-        function showStatus(message, type) {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = message;
-            statusEl.className = 'status ' + type;
-            statusEl.style.display = 'block';
-
-            // 自动隐藏成功消息
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 3000);
-            }
-        }
-
-        // 切换模式函数
-        function switchMode(mode, videoUrl = '') {
-            // 清理现有实例
-            if (typeof cleanupOldInstances === 'function') {
-                cleanupOldInstances();
-            }
-            
-            // 清理游戏实例
-            if (window.__gameInstances && window.__gameInstances.current) {
-                if (typeof window.__gameInstances.current.cleanup === 'function') {
-                    try {
-                        window.__gameInstances.current.cleanup();
-                    } catch (e) {
-                        console.error('清理游戏实例失败：', e);
-                    }
-                }
-                window.__gameInstances.current = null;
-            }
-
-            // 设置新的全局变量
-            window.ictype = mode;
-            if (videoUrl) {
-                window.vurl = videoUrl;
-            }
-
-            // 重新初始化
-            setTimeout(() => {
-                if (mode === 'video' && typeof Icon !== 'undefined') {
-                    try {
-                        const m = new Icon();
-                        m.initVideo(window.vurl).catch(error => {
-                            console.error('视频初始化失败：', error);
-                            if (window.__faviconInstances.icon) {
-                                window.__faviconInstances.icon.showError('视频加载失败：' + (error.message || '未知错误'));
-                            }
-                        });
-                    } catch (error) {
-                        console.error('视频模式初始化异常：', error);
-                    }
-                } else if (mode === 'camera' && typeof Icon !== 'undefined') {
-                    try {
-                        const m = new Icon();
-                        m.initCam().catch(error => {
-                            console.error('摄像头初始化失败：', error);
-                        });
-                    } catch (error) {
-                        console.error('摄像头模式初始化异常：', error);
-                    }
-                } else if (mode === 'snake' && typeof SnakeGame !== 'undefined') {
-                    try {
-                        const game = new SnakeGame();
-                        game.init();
-                    } catch (error) {
-                        console.error('贪食蛇游戏初始化异常：', error);
-                        alert('贪食蛇游戏初始化失败：' + error.message);
-                    }
-                }
-                showStatus(`已切换到 ${mode} 模式`, 'success');
-            }, 100);
-        }
-
-        // 按钮事件监听
-        document.getElementById('video-btn').addEventListener('click', function () {
-            showStatus('正在加载视频模式...', 'success');
-            switchMode('video');
-        });
-
-        document.getElementById('camera-btn').addEventListener('click', function () {
-            // 检查是否在 HTTPS 或 localhost
-            const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-            const isHttps = location.protocol === 'https:';
-
-            if (!isHttps && !isLocalhost) {
-                showStatus('摄像头功能需要 HTTPS 环境或 localhost，当前页面不符合要求', 'error');
-                return;
-            }
-
-            showStatus('正在请求摄像头权限...', 'success');
-            switchMode('camera');
-        });
-
-        document.getElementById('snake-btn').addEventListener('click', function () {
-            showStatus('正在加载贪食蛇游戏...', 'success');
-            switchMode('snake');
-        });
-    </script>
 </body>
 
 </html>

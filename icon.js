@@ -26,27 +26,6 @@ function cleanupOldInstances() {
 }
 
 /**
- * 设置页面 favicon 为指定 canvas 的内容
- * @param {HTMLCanvasElement} canvas - 要设置为 favicon 的 canvas 元素
- */
-function setFavico(canvas) {
-  const url = canvas.toDataURL('image/png')
-  let icons = [...document.querySelector('head').querySelectorAll('link')]
-    .filter(link => {
-      const rel = link.getAttribute('rel') || ''
-      return rel.indexOf('icon') > -1
-    })
-  if (icons.length) {
-    icons.forEach(icon => icon.setAttribute('href', url))
-  } else {
-    const icon = document.createElement('link')
-    icon.setAttribute('rel', 'icon')
-    icon.setAttribute('href', url)
-    document.querySelector('head').appendChild(icon)
-  }
-}
-
-/**
  * Icon 类 - 视频和摄像头功能
  * 负责处理视频播放、摄像头捕获和滤镜应用
  */
@@ -103,17 +82,17 @@ class Icon {
   }
   /**
    * 初始化视频播放器
-   * @param {string} url - 视频URL，如果未提供则使用默认视频 'lol.mp4'
+   * @param {string} url - 视频URL，如果未提供则使用CDN上的默认视频
    * @returns {Promise<void>}
    * @throws {Error} 视频加载失败时抛出错误
    */
   initVideo(url) {
     return new Promise((resolve, reject) => {
-      const videoUrl = url || 'lol.mp4';
+      const videoUrl = url || 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/lol.mp4';
 
       try {
-        if (videoUrl === 'lol.mp4') {
-          console.log('使用默认视频文件：lol.mp4');
+        if (videoUrl === 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/lol.mp4') {
+          console.log('使用默认视频文件（CDN）');
         }
 
         let video = document.createElement('video');
@@ -174,8 +153,8 @@ class Icon {
   handleVideoError(videoUrl, reject, video = null, customMessage) {
     let errorMessage = customMessage || '视频加载失败';
 
-    if (videoUrl === 'lol.mp4') {
-      errorMessage = `默认视频文件 'lol.mp4' 不存在或无法访问。请确保项目根目录下有 lol.mp4 文件，或通过 window.vurl 指定其他视频URL。`;
+    if (videoUrl === 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/lol.mp4') {
+      errorMessage = `默认视频文件无法访问。请检查网络连接，或通过 window.vurl 指定其他视频URL。`;
     } else if (videoUrl.startsWith('http')) {
       errorMessage = `无法加载视频：${videoUrl}。可能是跨域(CORS)问题，请确保视频服务器允许跨域访问。`;
     } else {
