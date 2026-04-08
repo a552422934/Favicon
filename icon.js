@@ -10,23 +10,11 @@ import {
   KEY_MAP,
   setFavico,
   formatTime,
+  cleanupOldInstance,
+  waitForModule,
+  showError,
 } from "./utils.js";
 import "./game.js";
-
-// 全局实例注册表，用于清理旧实例
-window.__faviconInstances = window.__faviconInstances || {};
-
-// 清理旧实例
-function cleanupOldInstances() {
-  if (window.__faviconInstances.icon) {
-    try {
-      window.__faviconInstances.icon.cleanup();
-    } catch (e) {
-      console.error("清理图标实例失败：", e);
-    }
-    delete window.__faviconInstances.icon;
-  }
-}
 
 /**
  * Icon 类 - 视频和摄像头功能
@@ -41,11 +29,12 @@ class Icon {
     this.SIDE = 32; // favicon 边长32px
 
     // 清理旧实例
-    if (window.__faviconInstances.icon) {
-      window.__faviconInstances.icon.cleanup();
-    }
+    cleanupOldInstance('icon');
 
     // 注册当前实例
+    if (!window.__faviconInstances) {
+      window.__faviconInstances = {};
+    }
     window.__faviconInstances.icon = this;
 
     // 事件监听器引用
@@ -242,16 +231,6 @@ class Icon {
       },
       false,
     );
-  }
-  /**
-   * 格式化时间（秒 → MM:SS）
-   * @param {number} second - 秒数
-   * @returns {string} 格式化的时间字符串（如 01:30）
-   */
-  formatTime(second) {
-    const m = Math.floor(second / 60) + "";
-    const s = parseInt(second % 60) + "";
-    return m.padStart(2, "0") + ":" + s.padStart(2, "0");
   }
   /**
    * 显示视频播放进度
@@ -508,8 +487,6 @@ class Icon {
       }
     }
 
-    // 标题恢复功能已移除，如需使用请在调用方实现
-    console.log("Icon instance cleaned up");
   }
 }
 
@@ -518,25 +495,8 @@ class Icon {
  * 根据全局变量 window.ictype 的值自动初始化相应功能：
  * - 'video': 视频播放模式（可通过 window.vurl 指定视频URL）
  * - 'camera': 摄像头模式
- * - 'snake': 贪食蛇游戏模式（自动加载 game.js）
+ * - 'snake': 贪吃蛇游戏模式（自动加载 game.js）
  */
-
-// 等待 game.js 加载完成后再初始化游戏
-function waitForGameModule(callback, maxRetries = 50) {
-  let retries = 0;
-  const checkInterval = setInterval(() => {
-    if (typeof SnakeGame !== "undefined") {
-      clearInterval(checkInterval);
-      callback();
-    } else {
-      retries++;
-      if (retries >= maxRetries) {
-        clearInterval(checkInterval);
-        console.error("游戏模块加载超时！");
-      }
-    }
-  }, 100);
-}
 
 if (window.ictype === "video") {
   try {
@@ -560,13 +520,16 @@ if (window.ictype === "video") {
     console.error("摄像头模式初始化异常：", error);
   }
 } else if (window.ictype === "snake") {
-  // 贪食蛇游戏模式 - 等待 game.js 加载完成后初始化
-  waitForGameModule(() => {
-    try {
-      var game = new SnakeGame();
-      game.init();
-    } catch (error) {
-      console.error("贪食蛇游戏初始化异常：", error);
+  // 贪吃蛇游戏模式 - 等待 game.js 加载完成后初始化
+  waitForModule(
+    () => typeof SnakeGame !== "undefined",
+    () => {
+      try {
+        var game = new SnakeGame();
+        game.init();
+      } catch (error) {
+        console.error("贪吃蛇游戏初始化异常：", error);
+      }
     }
-  });
+  );
 }

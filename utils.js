@@ -104,3 +104,45 @@ export function showError(message, showToast = true) {
     }, 5000);
   }
 }
+
+/**
+ * 清理旧的 Favicon 实例
+ * @param {string} instanceName - 实例名称（如 'icon'）
+ */
+export function cleanupOldInstance(instanceName) {
+  if (!window.__faviconInstances) {
+    window.__faviconInstances = {};
+  }
+  
+  if (window.__faviconInstances[instanceName]) {
+    try {
+      window.__faviconInstances[instanceName].cleanup();
+    } catch (e) {
+      console.error(`清理 ${instanceName} 实例失败：`, e);
+    }
+    delete window.__faviconInstances[instanceName];
+  }
+}
+
+/**
+ * 等待模块加载完成
+ * @param {Function} checkFn - 检查模块是否加载完成的函数
+ * @param {Function} callback - 加载完成后的回调
+ * @param {number} [maxRetries=50] - 最大重试次数
+ * @param {number} [interval=100] - 检查间隔（毫秒）
+ */
+export function waitForModule(checkFn, callback, maxRetries = 50, interval = 100) {
+  let retries = 0;
+  const checkInterval = setInterval(() => {
+    if (checkFn()) {
+      clearInterval(checkInterval);
+      callback();
+    } else {
+      retries++;
+      if (retries >= maxRetries) {
+        clearInterval(checkInterval);
+        console.error("模块加载超时！");
+      }
+    }
+  }, interval);
+}
