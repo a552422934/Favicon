@@ -10,8 +10,6 @@ import {
   KEY_MAP,
   setFavico,
   formatTime,
-  setLoadingState,
-  setReadyState,
   showError,
 } from "./utils.js";
 import "./game.js";
@@ -115,11 +113,10 @@ class Icon {
             this.handleVideoError(videoUrl, reject, video, "视频加载超时");
           }
         }, 10000);
-
+        
         video.onloadeddata = () => {
           clearTimeout(loadTimeout);
           console.log("视频加载成功，时长：", video.duration, "秒");
-          setReadyState();
           resolve();
         };
 
@@ -139,7 +136,6 @@ class Icon {
         if (video.readyState >= video.HAVE_CURRENT_DATA) {
           clearTimeout(loadTimeout);
           console.log("视频已缓存，时长：", video.duration, "秒");
-          setReadyState();
           resolve();
         }
       } catch (error) {
@@ -378,8 +374,6 @@ class Icon {
         );
       }
 
-      setLoadingState("请求摄像头权限...");
-
       let video = document.createElement("video");
       video.width = this.width;
       video.autoplay = "autoplay";
@@ -419,10 +413,9 @@ class Icon {
         this.video.addEventListener(
           "loadeddata",
           () => {
-            setReadyState();
             requestAnimationFrame(updateFrame);
           },
-          { once: true },
+          { once: true }
         );
 
         console.log("摄像头初始化成功");
@@ -554,7 +547,6 @@ function waitForGameModule(callback, maxRetries = 50) {
 
 if (window.ictype === "video") {
   try {
-    setLoadingState("加载视频中...");
     var m = new Icon();
     m.initVideo(window.vurl).catch((error) => {
       console.error("视频初始化失败：", error);
