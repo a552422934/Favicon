@@ -9,6 +9,7 @@
 import {
   KEY_MAP,
   setFavico,
+  formatTime,
 } from "./utils.js";
 import "./game.js";
 
@@ -181,7 +182,7 @@ class Icon {
       }
     }
 
-    // 错误信息通过 console.error 输出，调用方可自行处理
+    // 错误信息通过 console.error 输出
     console.error(errorMessage);
     reject(new Error(errorMessage));
   }
@@ -387,7 +388,7 @@ class Icon {
 
         this.video.onerror = (error) => {
           console.error("摄像头视频错误：", error);
-          // 错误信息通过 console.error 输出，调用方可自行处理
+          showError("摄像头视频流错误，请检查摄像头是否正常工作。");
         };
 
         // 使用 requestAnimationFrame 并限制帧率
@@ -439,7 +440,7 @@ class Icon {
       }
     } catch (error) {
       console.error("摄像头初始化失败：", error);
-      // 错误信息通过 console.error 输出，调用方可自行处理
+      showError(error.message);
       throw error;
     }
   }
@@ -513,10 +514,59 @@ class Icon {
 }
 
 /**
- * 导出 Icon 类供外部使用
- * 调用方需要根据需要自行初始化：
- * - 视频模式: new Icon().initVideo(url)
- * - 摄像头模式: new Icon().initCam()
- * - 游戏模式: 需要单独导入 game.js 并初始化 SnakeGame
+ * 自动初始化逻辑
+ * 根据全局变量 window.ictype 的值自动初始化相应功能：
+ * - 'video': 视频播放模式（可通过 window.vurl 指定视频URL）
+ * - 'camera': 摄像头模式
+ * - 'snake': 贪食蛇游戏模式（自动加载 game.js）
  */
-export { Icon };
+
+// 等待 game.js 加载完成后再初始化游戏
+function waitForGameModule(callback, maxRetries = 50) {
+  let retries = 0;
+  const checkInterval = setInterval(() => {
+    if (typeof SnakeGame !== "undefined") {
+      clearInterval(checkInterval);
+      callback();
+    } else {
+      retries++;
+      if (retries >= maxRetries) {
+        clearInterval(checkInterval);
+        console.error("游戏模块加载超时！");
+      }
+    }
+  }, 100);
+}
+
+if (window.ictype === "video") {
+  try {
+    var m = new Icon();
+    m.initVideo(window.vurl).catch((error) => {
+      console.error("视频初始化失败：", error);
+      if (window.__faviconInstances.icon) {
+        showError("视频加载失败：" + (error.message || "未知错误"));
+      }
+    });
+  } catch (error) {
+    console.error("视频模式初始化异常：", error);
+  }
+} else if (window.ictype === "camera") {
+  try {
+    var m = new Icon();
+    m.initCam().catch((error) => {
+      console.error("摄像头初始化失败：", error);
+    });
+  } catch (error) {
+    console.error("摄像头模式初始化异常：", error);
+  }
+} else if (window.ictype === "snake") {
+  // 贪食蛇游戏模式 - 等待 game.js 加载完成后初始化
+  waitForGameModule(() => {
+    try {
+      var game = new SnakeGame();
+      game.init();
+    } catch (error) {
+      console.error("贪食蛇游戏初始化异常：", error);
+    }
+  });
+}
