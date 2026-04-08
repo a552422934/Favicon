@@ -193,6 +193,33 @@
         </div>
     </div>
 
+    <script type="module">
+        // 导入 Icon 类
+        import { Icon } from './icon.js';
+        import './game.js';
+        
+        // 根据全局变量自动初始化
+        if (window.ictype === 'video') {
+            const m = new Icon();
+            m.initVideo(window.vurl).catch(error => {
+                console.error('视频初始化失败：', error);
+            });
+        } else if (window.ictype === 'camera') {
+            const m = new Icon();
+            m.initCam().catch(error => {
+                console.error('摄像头初始化失败：', error);
+            });
+        } else if (window.ictype === 'snake') {
+            // 等待游戏模块加载
+            const checkGame = setInterval(() => {
+                if (typeof SnakeGame !== 'undefined') {
+                    clearInterval(checkGame);
+                    const game = new SnakeGame();
+                    game.init();
+                }
+            }, 100);
+        }
+    </script>
     
 </body>
 
