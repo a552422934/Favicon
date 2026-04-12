@@ -17,7 +17,7 @@
 
 ### 方式一：CDN 引入
 ```html
-<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.0.1/icon.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.1.0/icon.js"></script>
 ```
 
 ### 方式二：本地引入
