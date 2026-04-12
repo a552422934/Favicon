@@ -17,14 +17,15 @@
 
 ### 方式一：CDN 引入
 ```html
-<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@0.1/icon.js"></script>
+<script src=""></script>
 ```
 
 ### 方式二：本地引入
+
 1. 下载 [icon.js](icon.js) 文件
 2. 在你的 HTML 文件中引入：
 ```html
-<script src="path/to/icon.js"></script>
+<script src="icon.js"></script>
 ```
 
 ### 方式三：直接使用演示页面
@@ -59,6 +60,7 @@ window.ictype = 'camera';
 ![](img/02-cam-filter.gif)
 
 ### 贪食蛇游戏模式
+
 ```javascript
 window.ictype = 'snake';
 // 加载库
@@ -79,7 +81,6 @@ window.ictype = 'snake';
 | 变量名 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `window.ictype` | string | - | 必需：`'video'`、`'camera'` 或 `'snake'` |
-| `window.vurl` | string | - | 已废弃：视频模式现在通过弹出框输入视频地址 |
 
 ### API 参考
 
@@ -112,32 +113,12 @@ snake.setFood();
 ```
 
 ### 自定义滤镜
-Favicon 内置了多种滤镜算法，你可以在代码中切换使用：
-
-```javascript
-// 灰色滤镜（取消注释即可使用）
-// var avg = (r + g + b) / 3;
-// imgdata.data[i] = imgdata.data[i+1] = imgdata.data[i+2] = avg;
-
-// 反色滤镜（底片效果）
-// imgdata.data[i] = 255 - r;
-// imgdata.data[i+1] = 255 - g;
-// imgdata.data[i+2] = 255 - b;
-
-// 黑白滤镜
-// imgdata.data[i] = avg > 128 ? 255 : 0;
-// imgdata.data[i+1] = avg > 128 ? 255 : 0;
-// imgdata.data[i+2] = avg > 128 ? 255 : 0;
-
-// 怀旧滤镜（当前默认）
-var newR = (0.393 * r + 0.769 * g + 0.189 * b);
-var newG = (0.349 * r + 0.686 * g + 0.168 * b);
-var newB = (0.272 * r + 0.534 * g + 0.131 * b);
-```
+Favicon 内置了多种滤镜算法，你可以在代码中切换使用
 
 ## 🎯 高级用法
 
 ### 扩展新功能
+
 由于 favicon 尺寸为 32×32 像素，你可以在 30×30 的可用空间内（边框1px）创建更多小游戏：
 
 - 俄罗斯方块
@@ -161,10 +142,9 @@ var newB = (0.272 * r + 0.534 * g + 0.131 * b);
 
 ```
 iconjs/
-├── icon.js              # 主库文件
+├── icon.js              # 主文件
 ├── index.html           # 演示页面
-├── README.md           # 本文件
-├── demo.md             # 详细开发文档
+├── README.md           # 说明文件
 ├── lol.mp4             # 默认视频文件
 ├── img/                # 演示动图
 │   ├── 01-video.gif
