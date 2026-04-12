@@ -145,7 +145,7 @@ iconjs/
 ├── icon.js              # 主文件
 ├── index.html           # 演示页面
 ├── README.md           # 说明文件
-├── lol.mp4             # 默认视频文件
+├── cxk.mp4             # 默认视频文件
 ├── img/                # 演示动图
 │   ├── 01-video.gif
 │   ├── 02-cam.gif

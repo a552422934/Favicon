@@ -213,7 +213,7 @@ class Icon {
 function initFavicon(type) {
   cleanupAll();
   if (type === "video") {
-    const url = prompt('请输入视频地址：', 'lol.mp4');
+    const url = prompt('请输入视频地址：', 'cxk.mp4');
     if (url) new Icon().initVideo(url).catch(e => alert(e.message));
   } else if (type === "camera") {
     new Icon().initCam().catch(e => alert(e.message));
