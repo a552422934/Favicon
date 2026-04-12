@@ -17,7 +17,7 @@
 
 ### 方式一：CDN 引入
 ```html
-<script src=""></script>
+<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.0.1/icon.js"></script>
 ```
 
 ### 方式二：本地引入
@@ -29,7 +29,7 @@
 ```
 
 ### 方式三：直接使用演示页面
-打开 [index.html](index.html) 即可体验全部功能。
+打开 [index.html](https://a552422934.github.io/Favicon/) 即可体验全部功能。
 
 ## 📖 使用指南
 
