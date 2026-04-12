@@ -28,7 +28,7 @@
 ###  方式二：CDN 引入
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/icon.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.2.0/icon.js"></script>
 ```
 
 ## 📖 使用指南
@@ -135,9 +135,9 @@ breakoutGame.handleKey(event, isDown);
 Favicon/
 ├── icon.js              # 主文件 - 核心功能模块
 ├── game.js              # 游戏模块 - 贪吃蛇和打砖块
-├── index.html           # 演示页面和书签栏生成器
+├── index.html           # 演示页面
 ├── README.md            # 说明文件
-├── ph.ico               # 默认 favicon 图标
+├── favicon.ico          # favicon 图标
 ├── img/                 # 演示动图
 │   ├── 01-video.gif
 │   ├── 02-cam.gif
@@ -169,7 +169,7 @@ Favicon/
 
 ## 🙏 致谢
 
-- 灵感来源：[Animating URLs with Javascript and Emojis](https://matthewrayfield.com/articles/animating-urls-with-javascript-and-emojis/)，[iconjs](https://github.com/shengxinjing/iconjs)
+- 来源：[iconjs](https://github.com/shengxinjing/iconjs)，[Animating URLs with Javascript and Emojis](https://matthewrayfield.com/articles/animating-urls-with-javascript-and-emojis/)
 - 感谢所有贡献者和使用者
 
 ## 📞 联系方式
