@@ -78,6 +78,7 @@ class Icon {
     this._keydownHandler = e => this.handleKeydown(e);
     this.frameInterval = 100; // 帧间隔时间（100ms 约等于 10fps，适合 favicon）
     this.lastFrame = 0; // 记录上一帧的时间戳
+    this.filterMode = 'none'; // 滤镜模式：'none' | 'sepia' | 'grayscale' | 'invert' | 'contrast' | 'brightness'
   }
 
   /**
@@ -114,12 +115,31 @@ class Icon {
    */
   async initCam() {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("浏览器不支持摄像头");
-    this.video = Object.assign(document.createElement("video"), { autoplay: true });
+    this.video = Object.assign(document.createElement("video"), { autoplay: true, muted: true, playsInline: true });
     // document.body.appendChild(this.video);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      } catch (err) {
+        // 修复：刷新页面时摄像头硬件锁尚未释放导致的 NotReadableError (黑屏报错)
+        if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          await new Promise(r => setTimeout(r, 800)); // 等待硬件释放
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        } else {
+          throw err;
+        }
+      }
+
+      // 防御性检查：防止等待摄像头期间触发了 cleanup 导致 video 为 null 报错崩溃
+      if (!this.video) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
       this.video.srcObject = stream;
+      this.video.play().catch(e => console.warn("播放失败:", e)); // 显式播放，防止卡在黑屏初始帧
 
       const loop = (ts) => {
         if (!this.video) return;
@@ -129,19 +149,50 @@ class Icon {
         }
         requestAnimationFrame(loop);
       };
-      this.video.onloadeddata = () => requestAnimationFrame(loop);
+        this.video.onloadeddata = () => {
+          document.addEventListener("keydown", this._keydownHandler);
+          requestAnimationFrame(loop);
+        };
     } catch (e) {
-      this.video.remove();
+      if (this.video) this.video.remove();
+      if (e.name === 'NotReadableError' || e.name === 'TrackStartError' || e.message === 'Could not start video source') {
+        throw new Error("无法启动摄像头。请确保：\n1. 摄像头未被其他程序(如微信/会议软件)占用\n2. 已关闭其他使用摄像头的浏览器标签页\n排查后请重试！");
+      }
       throw e;
     }
   }
 
   /**
-   * 键盘事件处理，用于控制视频进度和音量
+   * 键盘事件处理，用于控制视频进度、音量和滤镜
    * @param {KeyboardEvent} e 
    */
   handleKeydown(e) {
     if (!this.video) return;
+    
+    // 数字键 1-6 切换滤镜模式
+    if (e.key >= '1' && e.key <= '6') {
+      const filters = ['none', 'sepia', 'grayscale', 'invert', 'contrast', 'brightness'];
+      this.filterMode = filters[parseInt(e.key) - 1];
+      console.log(`🎨 滤镜切换为: ${this.filterMode}`);
+      
+      // 在标题栏显示当前滤镜
+      const filterNames = {
+        'none': '无滤镜',
+        'sepia': '复古',
+        'grayscale': '灰度',
+        'invert': '反色',
+        'contrast': '高对比',
+        'brightness': '增亮'
+      };
+      document.title = `滤镜: ${filterNames[this.filterMode]} (按1-6切换)`;
+      
+      // 立即触发一次渲染以显示效果
+      if (this.video.readyState >= 2) {
+        this.videoToImageByFilter();
+      }
+      return;
+    }
+
     const dir = KEY_MAP[e.code] || KEY_MAP[e.keyCode];
     if (!dir) return;
     e.preventDefault();
@@ -161,22 +212,86 @@ class Icon {
   }
 
   /**
-   * 带有 Sepia (复古/老照片) 风格滤镜的视频渲染
-   * 提取画面像素数据，经过矩阵转换后再推送到 Favicon
+   * 应用指定的滤镜效果
+   * @param {ImageData} imgData - 图像数据
+   * @returns {ImageData} 处理后的图像数据
+   */
+  applyFilter(imgData) {
+    const d = imgData.data;
+    
+    switch (this.filterMode) {
+      case 'sepia': {
+        // Sepia (复古/老照片) 滤镜
+        for (let i = 0; i < d.length; i += 4) {
+          let r = d[i], g = d[i+1], b = d[i+2];
+          d[i]   = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
+          d[i+1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
+          d[i+2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+        }
+        break;
+      }
+        
+      case 'grayscale': {
+        // 灰度滤镜 - 使用亮度公式
+        for (let i = 0; i < d.length; i += 4) {
+          let gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+          d[i] = d[i+1] = d[i+2] = gray;
+        }
+        break;
+      }
+        
+      case 'invert': {
+        // 反色滤镜
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = 255 - d[i];
+          d[i+1] = 255 - d[i+1];
+          d[i+2] = 255 - d[i+2];
+        }
+        break;
+      }
+        
+      case 'contrast': {
+        // 高对比度滤镜 (增加 50% 对比度)
+        const factor = (259 * (128 + 50)) / (255 * (259 - 50));
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = Math.min(255, Math.max(0, factor * (d[i] - 128) + 128));
+          d[i+1] = Math.min(255, Math.max(0, factor * (d[i+1] - 128) + 128));
+          d[i+2] = Math.min(255, Math.max(0, factor * (d[i+2] - 128) + 128));
+        }
+        break;
+      }
+        
+      case 'brightness': {
+        // 亮度增强滤镜 (增加 30%)
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = Math.min(255, d[i] * 1.3);
+          d[i+1] = Math.min(255, d[i+1] * 1.3);
+          d[i+2] = Math.min(255, d[i+2] * 1.3);
+        }
+        break;
+      }
+        
+      case 'none':
+      default:
+        // 无滤镜，保持原样
+        break;
+    }
+    
+    return imgData;
+  }
+
+  /**
+   * 带有滤镜效果的视频渲染
+   * 提取画面像素数据，经过滤镜转换后再推送到 Favicon
    */
   videoToImageByFilter() {
     if (!this.video) return;
     this.ctx.drawImage(this.video, 0, 0, SIDE, SIDE);
     const imgData = this.ctx.getImageData(0, 0, SIDE, SIDE);
-    const d = imgData.data;
-
-    // 像素级处理：Sepia 滤镜算法
-    for (let i = 0; i < d.length; i += 4) {
-      let r = d[i], g = d[i+1], b = d[i+2];
-      d[i]   = (r * 0.393) + (g * 0.769) + (b * 0.189);
-      d[i+1] = (r * 0.349) + (g * 0.686) + (b * 0.168);
-      d[i+2] = (r * 0.272) + (g * 0.534) + (b * 0.131);
-    }
+    
+    // 应用选定的滤镜
+    this.applyFilter(imgData);
+    
     this.ctx.putImageData(imgData, 0, 0);
     setFavico(this.canvas);
   }
@@ -208,7 +323,7 @@ class Icon {
 
 /**
  * Favicon 挂件初始化入口
- * @param {string} type - 'video' | 'camera' | 'snake'
+ * @param {string} type - 'video' | 'camera' | 'game'
  */
 function initFavicon(type) {
   cleanupAll();
@@ -217,8 +332,8 @@ function initFavicon(type) {
     if (url) new Icon().initVideo(url).catch(e => alert(e.message));
   } else if (type === "camera") {
     new Icon().initCam().catch(e => alert(e.message));
-  } else if (type === "snake") {
-    waitFor(() => typeof SnakeGame !== "undefined", () => new SnakeGame().init());
+  } else if ( type === "game") {
+    waitFor(() => typeof switchGame !== "undefined", () => switchGame(1));
   }
 }
 
