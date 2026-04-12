@@ -7,71 +7,74 @@
 ## ✨ 特性亮点
 
 - 🎥 **视频播放**：在 favicon 中播放视频，支持键盘控制进度和音量
-- 📹 **摄像头监控**：实时显示摄像头画面，支持怀旧滤镜
-- 🎮 **游戏模式**：内置贪吃蛇与打砖块等多款小游戏，支持快捷键无缝切换，记录最高分
-- � **多种滤镜**：支持灰色、反色、黑白、怀旧等多种滤镜效果
-- ⌨️ **键盘控制**：使用方向键控制视频播放和游戏操作
+- 📹 **摄像头监控**：实时显示摄像头画面，支持多种滤镜效果
+- 🎮 **游戏模式**：内置贪吃蛇与打砖块两款经典游戏，支持快捷键无缝切换，记录最高分
+- 🎨 **多种滤镜**：支持灰色、反色、黑白、怀旧等多种滤镜效果
+- 🔖 **书签栏快捷启动**：拖拽书签到浏览器书签栏，即可在任意网页快速启动功能
 - 📱 **纯前端实现**：无需后端，基于 HTML5 Canvas 和 WebRTC
 
 ## 🚀 快速开始
 
-### 方式一：CDN 引入
+### 方式一：书签栏快捷启动（推荐）⭐
+
+打开 [在线演示页](https://a552422934.github.io/Favicon/)，将下方的功能按钮拖拽到浏览器书签栏：
+
+- 📺 **视频模式**：点击任意网页即可在 favicon 中播放视频
+- 📷 **摄像头模式**：点击任意网页即可开启摄像头监控
+- 🎮 **游戏模式**：点击任意网页即可开始玩游戏
+
+这种方式最方便，可以在任何网页上快速启动功能！
+
+###  方式二：CDN 引入
+
 ```html
 <script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.1.0/icon.js"></script>
 ```
 
-### 方式二：本地引入
-
-1. 下载 [icon.js](icon.js) 文件
-2. 在你的 HTML 文件中引入：
-```html
-<script src="icon.js"></script>
-```
-
-### 方式三：直接使用演示页面
-打开 [index.html](https://a552422934.github.io/Favicon/) 即可体验全部功能。
-
 ## 📖 使用指南
 
 ### 视频播放模式
-```javascript
-// 设置模式为视频
-window.ictype = 'video';
-// 加载库
-// （通常通过 script 标签加载 icon.js）
-// 注意：加载后会弹出输入框让用户输入视频地址，留空则使用默认视频
-```
+
+注意：加载后会弹出输入框让用户输入视频地址，不输入则使用默认视频
 
 **键盘控制**：
+
 - **← / →**：快退/快进 5 秒
-- **↑ / ↓**：增加/减少音量 0.1
+- **↑ / ↓**：增加/减少音量 10%
 
 ![](img/01-video.gif)
 
 ### 摄像头模式
-```javascript
-window.ictype = 'camera';
-// 加载库
-```
 
-摄像头会自动开启并显示怀旧滤镜效果，可以用于监控身后情况。
+摄像头会自动开启并显示画面，按数字键可切换不同的滤镜效果：
+- **1-6**：切换不同滤镜（包括灰色、反色、黑白、怀旧等）
 
 ![](img/02-cam.gif)
 ![](img/02-cam-filter.gif)
 
 ### 游戏模式
 
-```javascript
-window.ictype = 'game';
-// 加载库
-```
+游戏模式包含两款经典游戏，可以通过键盘数字键无缝切换：
 
+#### 🐍 贪吃蛇游戏
 **游戏规则**：
 
 - 使用方向键控制蛇的移动
 - 吃到食物增加分数
 - 撞到边界或自己游戏结束
 - 最高分保存在 localStorage 中
+
+#### 🧱 打砖块游戏
+**游戏规则**：
+- 使用 ← / → 方向键控制挡板移动
+- 反弹小球击碎所有砖块
+- 球触底则游戏结束
+- 根据击球位置产生不同的反弹角度
+- 最高分保存在 localStorage 中
+
+**游戏切换**：
+- **按 1**：切换到贪吃蛇游戏
+- **按 2**：切换到打砖块游戏
 
 ![](img/03-snake.gif)
 
@@ -80,7 +83,7 @@ window.ictype = 'game';
 ### 全局配置变量
 | 变量名 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `window.ictype` | string | - | 必需：`'video'`、`'camera'` 或 `'snake'` |
+| `window.ictype` | string | - | 必需：`'video'`、`'camera'` 或 `'game'` |
 
 ### API 参考
 
@@ -94,63 +97,54 @@ icon.initVideo(url); // url: 视频URL，可选
 // 初始化摄像头
 icon.initCam(); // 异步方法，返回 Promise
 
-// 应用滤镜（怀旧滤镜）
+// 应用滤镜
 icon.videoToImageByFilter();
 ```
 
-#### Snake 类
+#### SnakeGame 类
 ```javascript
-const snake = new Snake();
+const snakeGame = new SnakeGame();
 
 // 初始化游戏
-snake.init();
+snakeGame.init();
 
 // 手动移动（通常由定时器自动调用）
-snake.move();
+snakeGame.move();
 
 // 设置食物
-snake.setFood();
+snakeGame.setFood();
 ```
 
-### 自定义滤镜
-Favicon 内置了多种滤镜算法，你可以在代码中切换使用
+#### BreakoutGame 类
+```javascript
+const breakoutGame = new BreakoutGame();
 
-## 🎯 高级用法
+// 初始化游戏
+breakoutGame.init();
 
-### 扩展新功能
-
-由于 favicon 尺寸为 32×32 像素，你可以在 30×30 的可用空间内（边框1px）创建更多小游戏：
-
-- 俄罗斯方块
-- 推箱子
-
-### 多标签页应用
-```html
-<!-- 1号标签页：看视频 -->
-<a href="javascript:window.ictype='video';loadFavicon();">视频</a>
-
-<!-- 2号标签页：开摄像头 -->
-<a href="javascript:window.ictype='camera';loadFavicon();">摄像头</a>
-
-<!-- 3号标签页：玩贪食蛇 -->
-<a href="javascript:window.ictype='snake';loadFavicon();">贪食蛇</a>
+// 处理按键事件
+breakoutGame.handleKey(event, isDown);
 ```
+
+### 书签栏脚本原理
+书签栏中的脚本会检测是否已加载 Favicon 库，如果未加载则动态注入 CDN 脚本，然后初始化指定模式。这使得你可以在任何网页上使用这些功能。
 
 ## 📁 项目结构
 
 ```
-iconjs/
-├── icon.js              # 主文件
-├── index.html           # 演示页面
-├── README.md           # 说明文件
-├── cxk.mp4             # 默认视频文件
-├── img/                # 演示动图
+Favicon/
+├── icon.js              # 主文件 - 核心功能模块
+├── game.js              # 游戏模块 - 贪吃蛇和打砖块
+├── index.html           # 演示页面和书签栏生成器
+├── README.md            # 说明文件
+├── ph.ico               # 默认 favicon 图标
+├── img/                 # 演示动图
 │   ├── 01-video.gif
 │   ├── 02-cam.gif
 │   ├── 02-cam-filter.gif
-│   ├── 02-cam-filter2.gif
 │   └── 03-snake.gif
-└── .gitignore          # Git 忽略文件
+├── CHANGELOG.md         # 更新日志
+└── .gitignore           # Git 忽略文件
 ```
 
 ## 🤝 贡献指南
@@ -166,7 +160,7 @@ iconjs/
 ### 开发注意事项
 - 保持代码简洁，使用中文注释
 - 确保所有功能在主流浏览器中正常工作
-- 添加新功能时更新 demo.md 和 README.md
+- 添加新功能时更新 README.md 和 CHANGELOG.md
 - 遵循现有的代码风格
 
 ## 📄 许可证
@@ -175,7 +169,7 @@ iconjs/
 
 ## 🙏 致谢
 
-- 灵感来源：[Animating URLs with Javascript and Emojis](https://matthewrayfield.com/articles/animating-urls-with-javascript-and-emojis/)
+- 灵感来源：[Animating URLs with Javascript and Emojis](https://matthewrayfield.com/articles/animating-urls-with-javascript-and-emojis/)，[iconjs](https://github.com/shengxinjing/iconjs)
 - 感谢所有贡献者和使用者
 
 ## 📞 联系方式
