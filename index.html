@@ -90,7 +90,6 @@
             padding: 12px;
             background-color: #f5f5f5;
             border-radius: 6px;
-            border-left: 4px solid #2196F3;
         }
 
         .bookmark-item strong {
@@ -126,7 +125,7 @@
             transform: translateY(0);
         }
 
-       
+
 
         .bookmark-code::after {
             content: '← 拖到书签栏';
@@ -150,32 +149,31 @@
 
 <body>
     <div class="container">
-        <h1>Favicon 演示</h1>
+        <h1>有趣的Favicon</h1>
         <p>在浏览器 favicon 中 - 播放视频、摄像头监控、玩贪食蛇游戏</p>
 
         <div class="bookmark-section">
             <h3>🔖 拖拽到书签栏（点击任意网页即可使用）</h3>
             <p style="color: #666; font-size: 14px;">将下方链接拖拽到浏览器书签栏，即可在任意网页快速启动功能</p>
-            
-        
-                    
+
             <div class="bookmark-list">
-           
-                
-                <!-- 在线使用版 -->
-                <div class="bookmark-item"  style="border-left-color: #2196F3; margin-top: 10px;" >
+
+                <div class="bookmark-item" >
                     <strong>📺 视频模式</strong>
-                    <a href="javascript:(function(){window.ictype='video';window.vurl=undefined;var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@22d3d15/icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" >视频模式</a>
+                    <a href="javascript:(function(){if(window.__initFavicon){window.__initFavicon('video')}else{window.ictype='video';var s=document.createElement('script');s.type='module';s.textContent=%22import './icon.js';%22;document.head.appendChild(s)}void 0;})();"
+                        class="bookmark-code" draggable="true">视频模式</a>
                 </div>
-        
-                <div class="bookmark-item" style="border-left-color: #2196F3;">
+
+                <div class="bookmark-item" >
                     <strong>📷 摄像头模式</strong>
-                    <a href="javascript:(function(){window.ictype='camera';var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@3220421/icon.js';&quot;;document.head.appendChild(s);void 0;})();" class="bookmark-code" draggable="true" >摄像头模式</a>
+                    <a href="javascript:(function(){if(window.__initFavicon){window.__initFavicon('camera')}else{window.ictype='camera';var s=document.createElement('script');s.type='module';s.textContent=%22import './icon.js';%22;document.head.appendChild(s)}void 0;})();"
+                        class="bookmark-code" draggable="true">摄像头模式</a>
                 </div>
-        
-                <div class="bookmark-item" style="border-left-color: #2196F3;">
+
+                <div class="bookmark-item" >
                     <strong>🐍 贪吃蛇游戏</strong>
-                    <a href="javascript:(function(){window.ictype='snake';var s=document.createElement('script');s.type='module';s.textContent=&quot;import 'https://cdn.jsdelivr.net/gh/a552422934/Favicon@22d3d15/icon.js';&quot;;document.head.appendChild(s);void 0;})();"  class="bookmark-code" draggable="true" >贪吃蛇游戏</a>
+                    <a href="javascript:(function(){if(window.__initFavicon){window.__initFavicon('snake')}else{window.ictype='snake';var s=document.createElement('script');s.type='module';s.textContent=%22import './icon.js';%22;document.head.appendChild(s)}void 0;})();"
+                        class="bookmark-code" draggable="true">贪吃蛇游戏</a>
                 </div>
             </div>
         </div>
@@ -192,7 +190,7 @@
         </div>
     </div>
 
-    
+
 </body>
 
 </html>

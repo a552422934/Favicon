@@ -36,10 +36,9 @@
 ```javascript
 // 设置模式为视频
 window.ictype = 'video';
-// 可选：设置自定义视频URL（不设置则使用默认视频）
-window.vurl = 'your-video.mp4';
 // 加载库
 // （通常通过 script 标签加载 icon.js）
+// 注意：加载后会弹出输入框让用户输入视频地址，留空则使用默认视频
 ```
 
 **键盘控制**：
@@ -80,7 +79,7 @@ window.ictype = 'snake';
 | 变量名 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `window.ictype` | string | - | 必需：`'video'`、`'camera'` 或 `'snake'` |
-| `window.vurl` | string | `'lol.mp4'` | 可选：视频模式的视频URL |
+| `window.vurl` | string | - | 已废弃：视频模式现在通过弹出框输入视频地址 |
 
 ### API 参考
 

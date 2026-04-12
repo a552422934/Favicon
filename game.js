@@ -1,294 +1,112 @@
 /**
- * 游戏模块 - 提供游戏基类和具体游戏实现
- * @author a552422934
- * @version 0.2
+ * 游戏模块 - 贪食蛇高效实现
  */
 
-// 导入工具函数
-import { KEY_MAP, setFavico } from './utils.js';
-
-// 全局游戏实例注册表
 window.__gameInstances = window.__gameInstances || {};
 
 /**
- * 游戏基类 - 所有游戏的父类
- * 提供通用的游戏功能和接口
+ * 游戏基础类，负责 Canvas 初始化以及游戏实例生命周期管理
  */
 class Game {
   constructor() {
-    this.SIDE = 32; // favicon 边长32px
-    this.canvas = null;
-    this._keydownHandler = null;
-    this.timer = null;
-    
-    // 清理旧实例
-    if (window.__gameInstances.current) {
-      window.__gameInstances.current.cleanup();
-    }
-    
-    // 注册当前实例
+    this.SIDE = window.SIDE || 32;
+    window.__gameInstances.current?.cleanup();
     window.__gameInstances.current = this;
+    this.canvas = Object.assign(document.createElement('canvas'), { width: this.SIDE, height: this.SIDE });
+    this.ctx = this.canvas.getContext('2d');
   }
 
-  /**
-   * 初始化游戏画布（不添加到页面中）
-   */
-  initCanvas() {
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = this.canvas.height = this.SIDE;
-  }
-
-  /**
-   * 设置页面标题
-   * @param {string} title - 标题文本
-   */
-  setTitle(title) {
-    document.title = title;
-  }
-
-  /**
-   * 将 canvas 设置为 favicon
-   */
-  setFavico() {
-    setFavico(this.canvas);
-  }
-
-  /**
-   * 初始化游戏（子类必须实现）
-   */
-  init() {
-    throw new Error('Game.init() must be implemented by subclass');
-  }
-
-  /**
-   * 清理游戏资源（子类可以重写）
-   */
+  // 统一的清理机制，防止定时器或事件监听内存泄漏
   cleanup() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-
-    if (this._keydownHandler) {
-      document.removeEventListener('keydown', this._keydownHandler);
-      this._keydownHandler = null;
-    }
-
-    document.title = 'Free IT Videos & ProgramHub';
-    console.log('Game cleaned up');
+    clearInterval(this.timer);
+    if (this._handler) document.removeEventListener('keydown', this._handler);
   }
 }
 
 /**
- * 贪食蛇游戏类
- * 继承自 Game 基类
+ * 贪吃蛇游戏子类
  */
 class SnakeGame extends Game {
   constructor() {
     super();
+    // W: 网格的维度大小 (比如 10x10 的地图)
+    // S: 单个网格的像素大小 (3px)
+    // L: 边缘留白 / 偏移量 (1px)
+    this.W = 10; this.S = 3; this.L = 1;
+    this.directions = { left: {x:-1, y:0}, up: {x:0, y:-1}, right: {x:1, y:0}, down: {x:0, y:1} };
+  }
+
+  init() {
+    this.cleanup();
+    this.score = 0;
+    this.max = localStorage.getItem('max_score') || 0;
     
-    // 游戏参数
-    this.LINE_WIDTH = 1; // 边框宽度 1px
-    this.SIZE = 3; // 一个数据点的像素值
-    this.WIDTH = 10; // 游戏空间是10个 (32-2)/3
-    
-    this.score = 0; // 当前得分
-    this.max = localStorage.getItem('max_score') || 0; // 最高分
-    
-    this.directions = {
-      'left': { x: -1, y: 0 },
-      'up': { x: 0, y: -1 },
-      'right': { x: 1, y: 0 },
-      'down': { x: 0, y: 1 },
+    // 初始化 10x10 二维数组网格，0: 空白, 1: 蛇身, 2: 食物
+    this.grid = Array.from({length: this.W}, () => new Array(this.W).fill(0));
+    // 初始化蛇身体，默认长度为 3，向右移动
+    this.snake = [{x:0, y:4}, {x:1, y:4}, {x:2, y:4}];
+    this.snake.forEach(p => this.grid[p.y][p.x] = 1);
+    this.curr = this.directions.right;
+    this.setFood();
+    this._handler = e => {
+      const dir = window.KEY_MAP[e.code] || window.KEY_MAP[e.keyCode];
+      if (dir) { e.preventDefault(); this.curr = this.directions[dir]; }
     };
-    
-    this._keydownHandler = this.handleKeydown.bind(this);
-    
-    this.initCanvas();
+    document.addEventListener('keydown', this._handler);
+    this.timer = setInterval(() => this.move(), 170);
+    this.draw();
   }
 
   /**
-   * 初始化游戏网格
-   */
-  initGrid() {
-    this.grid = [];
-    while (this.grid.length < this.WIDTH) {
-      this.grid.push(new Array(this.WIDTH).fill(0));
-    }
-  }
-
-  /**
-   * 初始化小蛇
-   */
-  initSnake() {
-    this.snake = [];
-    let y = 4;
-    let x = 0;
-    let snakeLength = 3;
-    
-    while (snakeLength > 0) {
-      this.snake.push({ x: x, y: y });
-      this.grid[y][x] = '1';
-      snakeLength--;
-      x++;
-    }
-    
-    this.current = this.directions.right;
-  }
-
-  /**
-   * 绑定游戏事件
-   */
-  bindEvents() {
-    document.addEventListener('keydown', this._keydownHandler);
-    
-    this.timer = setInterval(() => {
-      this.move();
-    }, 170);
-  }
-
-  /**
-   * 处理键盘按键事件
-   * @param {KeyboardEvent} event - 键盘事件
-   */
-  handleKeydown(event) {
-    const code = event.code;
-    const keyCode = event.keyCode;
-    let direction = KEY_MAP[code] || KEY_MAP[keyCode];
-    
-    if (direction) {
-      event.preventDefault();
-      this.current = this.directions[direction];
-    }
-  }
-
-  /**
-   * 设置页面标题显示分数
-   */
-  setTitle() {
-    super.setTitle(`得分:${this.score}  最高分:${this.max}`);
-  }
-
-  /**
-   * 小蛇移动逻辑
-   */
-  move() {
-    const head = this.snake[this.snake.length - 1];
-    const tail = this.snake[0];
-    const nextX = head.x + this.current.x;
-    const nextY = head.y + this.current.y;
-
-    // 判断是否出界
-    const isOut = nextX < 0 || nextX >= this.WIDTH || nextY < 0 || nextY >= this.WIDTH;
-    if (isOut) {
-      this.resetGame();
-      return;
-    }
-
-    // 判断是否撞到自己
-    const isSelf = (this.grid[nextY][nextX]) == '1' && !(nextX === tail.x && nextY === tail.y);
-    if (isSelf) {
-      this.resetGame();
-      return;
-    }
-
-    // 判断是否吃到食物
-    const isFood = this.grid[nextY][nextX] == '2';
-    if (!isFood) {
-      this.snake.shift();
-      this.grid[tail.y][tail.x] = 0;
-    } else {
-      this.setFood();
-      this.score++;
-      this.setTitle();
-    }
-
-    this.snake.push({ x: nextX, y: nextY });
-    this.grid[nextY][nextX] = '1';
-    this.drawCanvas();
-  }
-
-  /**
-   * 随机放置食物
+   * 在地图的空闲位置随机生成食物
    */
   setFood() {
-    while (true) {
-      const x = Math.floor(Math.random() * this.WIDTH);
-      const y = Math.floor(Math.random() * this.WIDTH);
-      
-      if (this.grid[y][x] == '1') {
-        continue;
-      } else {
-        this.grid[y][x] = '2';
-        break;
-      }
+    let x, y;
+    do { x = Math.floor(Math.random()*this.W); y = Math.floor(Math.random()*this.W); }
+    while (this.grid[y][x]);
+    this.grid[y][x] = 2;
+  }
+
+  /**
+   * 核心逻辑：每一帧移动蛇的位置并检测碰撞
+   */
+  move() {
+    const head = this.snake[this.snake.length-1];
+    const next = { x: head.x + this.curr.x, y: head.y + this.curr.y };
+
+    // 检测是否撞墙或撞到自己
+    if (next.x<0 || next.x>=this.W || next.y<0 || next.y>=this.W || this.grid[next.y][next.x] === 1) {
+      if (this.score > this.max) localStorage.setItem('max_score', this.max = this.score);
+      return this.init(); // 撞毁后自动重新开始
     }
-  }
 
-  /**
-   * 绘制游戏画面
-   */
-  drawCanvas() {
-    const context = this.canvas.getContext('2d');
-    context.clearRect(0, 0, this.SIDE, this.SIDE);
-    context.strokeStyle = 'green';
-    context.lineWidth = this.LINE_WIDTH;
-    context.fillStyle = "red";
-    context.strokeRect(0, 0, this.SIDE, this.SIDE);
-
-    this.grid.forEach((row, y) => {
-      row.forEach((g, x) => {
-        if (g !== 0) {
-          context.fillRect(
-            this.LINE_WIDTH + x * this.SIZE,
-            this.LINE_WIDTH + y * this.SIZE,
-            this.SIZE,
-            this.SIZE
-          );
-        }
-      });
-    });
-    
-    this.setFavico();
-  }
-
-  /**
-   * 重置游戏
-   */
-  resetGame() {
-    if (this.score > this.max) {
-      localStorage.setItem('max_score', this.score);
-      this.max = this.score;
-      this.score = 0;
+    const eaten = this.grid[next.y][next.x] === 2;
+    if (!eaten) {
+      // 如果没吃到食物，移除蛇尾
+      const tail = this.snake.shift();
+      this.grid[tail.y][tail.x] = 0;
+    } else {
+      // 吃到食物，分数增加，并重新生成食物
+      this.score++;
+      this.setFood();
     }
-    
-    this.setTitle();
-    this.initGrid();
-    this.initSnake();
-    this.setFood();
-    this.drawCanvas();
+    // 更新新蛇头位置
+    this.snake.push(next);
+    this.grid[next.y][next.x] = 1;
+    this.draw();
   }
 
-  /**
-   * 初始化贪食蛇游戏
-   */
-  init() {
-    this.initGrid();
-    this.initSnake();
-    this.setFood();
-    this.drawCanvas();
-    this.bindEvents();
-  }
-
-  /**
-   * 清理游戏资源
-   */
-  cleanup() {
-    super.cleanup();
-    console.log('Snake game cleaned up');
+  // 渲染游戏画面并输出到 Favicon
+  draw() {
+    this.ctx.clearRect(0, 0, this.SIDE, this.SIDE);
+    this.ctx.strokeStyle = 'green';
+    this.ctx.strokeRect(0, 0, this.SIDE, this.SIDE);
+    this.ctx.fillStyle = 'red';
+    this.grid.forEach((row, y) => row.forEach((v, x) => v &&
+      this.ctx.fillRect(this.L + x*this.S, this.L + y*this.S, this.S, this.S)));
+    document.title = `得分:${this.score} 最高:${this.max}`;
+    window.setFavico(this.canvas);
   }
 }
 
-// 导出游戏类
-window.Game = Game;
 window.SnakeGame = SnakeGame;

@@ -1,535 +1,226 @@
 /**
- * 主文件 - 在浏览器 favicon 中创建交互式内容
- * 功能包括：视频播放、摄像头监控
+ * Favicon 交互库 - 核心文件
+ * 功能：视频播放、摄像头监控、游戏
  * @author a552422934
- * @version 0.3
+ * @version 0.4.3
  */
 
-// 导入工具函数和游戏模块
-import {
-  KEY_MAP,
-  setFavico,
-  formatTime,
-  cleanupOldInstance,
-  waitForModule,
-  showError,
-} from "./utils.js";
 import "./game.js";
 
+const SIDE = 32;
+const KEY_MAP = {
+  'ArrowLeft': 'left', 'ArrowUp': 'up', 'ArrowRight': 'right', 'ArrowDown': 'down',
+  37: 'left', 38: 'up', 39: 'right', 40: 'down',
+};
+
 /**
- * Icon 类 - 视频和摄像头功能
- * 负责处理视频播放、摄像头捕获和滤镜应用
+ * 设置页面 favicon
+ * @param {HTMLCanvasElement} canvas - 包含最新画面的 Canvas 实例
+ */
+function setFavico(canvas) {
+  const url = canvas.toDataURL('image/png');
+  const head = document.querySelector('head');
+  // 查找已有的 icon link 标签
+  let icons = Array.from(head.querySelectorAll('link')).filter(link => (link.getAttribute('rel') || '').includes('icon'));
+
+  if (icons.length) {
+    // 更新已有的 favicon
+    icons.forEach(icon => icon.setAttribute('href', url));
+  } else {
+    // 如果没有则新建并挂载到 head
+    const icon = Object.assign(document.createElement('link'), { rel: 'icon', href: url });
+    head.appendChild(icon);
+  }
+}
+
+/**
+ * 清理所有实例
+ */
+function cleanupAll() {
+  [window.__faviconInstances, window.__gameInstances].forEach(instances => {
+    if (instances) {
+      Object.values(instances).forEach(inst => inst?.cleanup?.());
+      // 对游戏实例仅清理 current 指针，其他实例清理整个对象
+      if (instances === window.__gameInstances) instances.current = null;
+      else Object.keys(instances).forEach(key => delete instances[key]);
+    }
+  });
+  document.title = 'Favicon';
+}
+
+/**
+ * 等待模块加载
+ * @param {Function} checkFn - 检查条件函数
+ * @param {Function} callback - 条件满足后的回调函数
+ * @param {number} retries - 最大重试次数，默认 50 次 (约 5 秒)
+ */
+function waitFor(checkFn, callback, retries = 50) {
+  if (checkFn()) return callback();
+  if (retries <= 0) return console.error("模块加载超时");
+  setTimeout(() => waitFor(checkFn, callback, retries - 1), 100);
+}
+
+window.KEY_MAP = KEY_MAP;
+window.setFavico = setFavico;
+window.SIDE = SIDE;
+
+/**
+ * 图标核心类，负责处理视频流、摄像头流，并渲染至 Favicon
  */
 class Icon {
-  /**
-   * 构造函数，初始化画布和参数
-   */
   constructor() {
-    this.width = 0;
-    this.SIDE = 32; // favicon 边长32px
+    // 将当前实例挂载到全局，方便统一管理和清理
+    window.__faviconInstances = { icon: this };
 
-    // 清理旧实例
-    cleanupOldInstance('icon');
-
-    // 注册当前实例
-    if (!window.__faviconInstances) {
-      window.__faviconInstances = {};
-    }
-    window.__faviconInstances.icon = this;
-
-    // 事件监听器引用
-    this._keydownHandler = this.handleKeydown.bind(this);
-    this.video = null;
-    this.canvas = null;
-    this.canvasFilter = null;
-
-    // 节流控制
-    this.lastFrameTime = 0;
-    this.frameInterval = 100; // 每100ms更新一次（10fps）
-    this.lastCameraFrame = 0;
-    this.cameraFrameInterval = 100; // 摄像头10fps
-
-    this.initCanvas();
-    this.initFilterCanvas();
+    this.canvas = Object.assign(document.createElement("canvas"), { width: SIDE, height: SIDE });
+    // 针对高频读取场景优化 Context
+    this.ctx = this.canvas.getContext("2d", {willReadFrequently: true });
+    this._keydownHandler = e => this.handleKeydown(e);
+    this.frameInterval = 100; // 帧间隔时间（100ms 约等于 10fps，适合 favicon）
+    this.lastFrame = 0; // 记录上一帧的时间戳
   }
+
   /**
-   * 初始化主画布（用于视频帧捕获）
+   * 初始化视频流
+   * @param {string} url - 视频播放地址
    */
-  initCanvas() {
-    this.canvas = document.createElement("canvas");
-    this.canvas.width = this.canvas.height = this.SIDE;
-    // 优化：设置 willReadFrequently 以提高频繁读取的性能
-    this.canvasContext = this.canvas.getContext("2d", {
-      willReadFrequently: true,
+  async initVideo(url) {
+    this.video = Object.assign(document.createElement("video"), {
+      controls: true, crossOrigin: "anonymous", autoplay: true, volume: 0.5, src: url
     });
-    // document.body.appendChild(this.canvas) // 调试时可取消注释
-  }
-  /**
-   * 初始化滤镜画布（用于滤镜效果处理）
-   */
-  initFilterCanvas() {
-    this.canvasFilter = document.createElement("canvas");
-    this.canvasFilter.width = this.canvasFilter.height = this.SIDE;
-    // 优化：设置 willReadFrequently 以提高频繁读取的性能
-    this.canvasFilterContext = this.canvasFilter.getContext("2d", {
-      willReadFrequently: true,
-    });
-    // document.body.appendChild(this.canvasFilter) // 调试时可取消注释
-  }
-  /**
-   * 初始化视频播放器
-   * @param {string} url - 视频URL，如果未提供则使用CDN上的默认视频
-   * @returns {Promise<void>}
-   * @throws {Error} 视频加载失败时抛出错误
-   */
-  initVideo(url) {
+    // document.body.appendChild(this.video);
+
     return new Promise((resolve, reject) => {
-      const videoUrl =
-        url || "https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/lol.mp4";
-
-      try {
-        let video = document.createElement("video");
-        video.width = this.width;
-        video.controls = "controls";
-        video.crossOrigin = "anonymous";
-        video.autoplay = "autoplay";
-        video.volume = 0.5;
-        video.preload = "auto";
-
-        const loadTimeout = setTimeout(() => {
-          if (video.readyState < video.HAVE_CURRENT_DATA) {
-            this.handleVideoError(videoUrl, reject, video, "视频加载超时");
+      // 监听视频数据加载完成
+      this.video.onloadeddata = () => {
+        this.video.ontimeupdate = () => {
+          if (Date.now() - this.lastFrame >= this.frameInterval) {
+            this.videoToImageByFilter();
+            this.updateProgress();
+            this.lastFrame = Date.now();
           }
-        }, 10000);
-        
-        video.onloadeddata = () => {
-          clearTimeout(loadTimeout);
-          console.log("视频加载成功，时长：", video.duration, "秒");
-          resolve();
         };
-
-        video.onerror = (error) => {
-          clearTimeout(loadTimeout);
-          console.error("视频加载错误：", error);
-          this.handleVideoError(videoUrl, reject, video);
-        };
-
-        video.src = videoUrl;
-        document.body.appendChild(video);
-
-        this.video = video;
-        this.bindVideoEvents();
-        this.bindKeyboardEvents();
-
-        if (video.readyState >= video.HAVE_CURRENT_DATA) {
-          clearTimeout(loadTimeout);
-          console.log("视频已缓存，时长：", video.duration, "秒");
-          resolve();
-        }
-      } catch (error) {
-        console.error("视频初始化异常：", error);
-        this.handleVideoError(
-          videoUrl,
-          reject,
-          null,
-          `视频初始化失败：${error.message}`,
-        );
-      }
+        // 绑定键盘快捷键控制视频
+        document.addEventListener("keydown", this._keydownHandler);
+        resolve();
+      };
+      this.video.onerror = () => reject(new Error("视频加载失败"));
+      setTimeout(() => this.video && this.video.readyState < 2 && reject(new Error("加载超时")), 10000);
     });
   }
 
   /**
-   * 处理视频错误
-   * @param {string} videoUrl - 视频URL
-   * @param {Function} reject - Promise的reject函数
-   * @param {HTMLVideoElement} [video] - 视频元素（可选，用于清理）
-   * @param {string} [customMessage] - 自定义错误信息
-   */
-  handleVideoError(videoUrl, reject, video = null, customMessage) {
-    let errorMessage = customMessage || "视频加载失败";
-
-    if (
-      videoUrl === "https://cdn.jsdelivr.net/gh/a552422934/Favicon@main/lol.mp4"
-    ) {
-      errorMessage = `默认视频文件无法访问。请检查网络连接，或通过 window.vurl 指定其他视频URL。`;
-    } else if (videoUrl.startsWith("http")) {
-      errorMessage = `无法加载视频：${videoUrl}。可能是跨域(CORS)问题，请确保视频服务器允许跨域访问。`;
-    } else {
-      errorMessage = `无法加载视频：${videoUrl}`;
-    }
-
-    if (video) {
-      video.onerror = null;
-      video.onloadeddata = null;
-
-      if (video.parentNode) {
-        video.parentNode.removeChild(video);
-      }
-
-      if (this.video === video) {
-        this.video = null;
-      }
-    }
-
-    // 错误信息通过 console.error 输出
-    console.error(errorMessage);
-    reject(new Error(errorMessage));
-  }
-  /**
-   * 绑定键盘控制事件
-   * 方向键控制视频：
-   * - 左/右：快退/快进5秒
-   * - 上/下：增加/减少音量0.1
-   */
-  bindKeyboardEvents() {
-    // 添加键盘事件监听器
-    document.addEventListener("keydown", this._keydownHandler);
-  }
-
-  /**
-   * 处理键盘按键事件
-   * @param {KeyboardEvent} event - 键盘事件
-   */
-  handleKeydown(event) {
-    if (!this.video) return;
-
-    const directions = {
-      left: () =>
-        (this.video.currentTime = Math.max(this.video.currentTime - 5, 0)),
-      right: () =>
-        (this.video.currentTime = Math.min(
-          this.video.currentTime + 5,
-          this.video.duration || Infinity,
-        )),
-      up: () => (this.video.volume = Math.min(this.video.volume + 0.1, 1.0)),
-      down: () => (this.video.volume = Math.max(this.video.volume - 0.1, 0.0)),
-    };
-
-    const code = event.code;
-    const keyCode = event.keyCode;
-    let direction = KEY_MAP[code] || KEY_MAP[keyCode];
-
-    if (direction) {
-      event.preventDefault();
-      directions[direction]();
-    }
-  }
-  /**
-   * 绑定视频事件监听器
-   * 监听视频播放时间更新，实时更新 favicon 和进度显示
-   */
-  bindVideoEvents() {
-    this.video.addEventListener(
-      "timeupdate",
-      () => {
-        const now = Date.now();
-        if (now - this.lastFrameTime >= this.frameInterval) {
-          this.videoToImage();
-          this.showProgress();
-          this.lastFrameTime = now;
-        }
-      },
-      false,
-    );
-  }
-  /**
-   * 显示视频播放进度
-   */
-  showProgress() {
-    // 进度显示功能已移除，如需使用请在调用方实现
-  }
-  /**
-   * 将当前视频帧捕获并设置为 favicon
-   */
-  videoToImage() {
-    if (!this.video || !this.canvasContext) {
-      return;
-    }
-
-    try {
-      this.canvasContext.clearRect(0, 0, this.SIDE, this.SIDE);
-      this.canvasContext.drawImage(this.video, 0, 0, this.SIDE, this.SIDE);
-      setFavico(this.canvas);
-    } catch (e) {
-      console.error("绘制视频帧失败：", e);
-    }
-  }
-  /**
-   * 应用滤镜并将视频帧设置为 favicon
-   * 支持多种滤镜效果（当前使用怀旧滤镜）：
-   * - 灰色滤镜、反色滤镜、黑白滤镜、黄色滤镜（注释中）
-   * - 怀旧滤镜（当前启用）
-   */
-  videoToImageByFilter() {
-    if (!this.video || !this.canvasContext || !this.canvasFilterContext) {
-      return;
-    }
-
-    try {
-      this.canvasContext.clearRect(0, 0, this.SIDE, this.SIDE);
-      this.canvasContext.drawImage(this.video, 0, 0, this.SIDE, this.SIDE);
-
-      var imgdata = this.canvasContext.getImageData(0, 0, this.SIDE, this.SIDE);
-
-      // for(var i=0;i<imgdata.data.length;i += 4){
-      // 灰色滤镜
-      //计算获取单位元素的RBG然后取平均值 然后复制给自身得到灰色的图像
-      // var avg =  (imgdata.data[i]+ imgdata.data[i+1]+ imgdata.data[i+2])/3
-      // imgdata.data[i] = imgdata.data[i+1] =imgdata.data[i+2] =avg
-
-      // 反色滤镜
-      //将所有的RGB值重新赋值（底片效果 = 255 - 当前的RGB值）
-      // imgdata.data[i] =255-imgdata.data[i];
-      // imgdata.data[i+1] =255-imgdata.data[i+1];
-      // imgdata.data[i+2] =255-imgdata.data[i+2];
-
-      // 黑白滤镜
-      // var avg =  (imgdata.data[i]+ imgdata.data[i+1]+ imgdata.data[i+2])/3;
-      // imgdata.data[i] =avg>128 ? 255 :0;
-      // imgdata.data[i+1] =avg>128 ? 255 :0;
-      // imgdata.data[i+2] =avg>128 ? 255 :0;
-
-      //黄色滤镜的算法：红色通道值和绿色通道值增加50（红色+绿色 = 黄色）
-      // var r = imgdata.data[i] +50;
-      // var g = imgdata.data[i+1] +50
-      // //注：当前值大于255时将其赋值255
-      // imgdata.data[i] = r > 255 ? 255 : r;
-      // imgdata.data[i+1] = g > 255 ? 255 : g;
-      // }
-
-      // 怀旧滤镜（复古效果）
-      // 使用线性变换公式调整RGB值，产生暖色调效果
-      for (var i = 0; i < imgdata.height * imgdata.width; i++) {
-        var r = imgdata.data[i * 4],
-          g = imgdata.data[i * 4 + 1],
-          b = imgdata.data[i * 4 + 2];
-
-        var newR = 0.393 * r + 0.769 * g + 0.189 * b;
-        var newG = 0.349 * r + 0.686 * g + 0.168 * b;
-        var newB = 0.272 * r + 0.534 * g + 0.131 * b;
-        var rgbArr = [newR, newG, newB].map((e) => {
-          return e < 0 ? 0 : e > 255 ? 255 : e;
-        });
-        [
-          imgdata.data[i * 4],
-          imgdata.data[i * 4 + 1],
-          imgdata.data[i * 4 + 2],
-        ] = rgbArr;
-      }
-
-      this.canvasFilterContext.putImageData(imgdata, 0, 0);
-      setFavico(this.canvasFilter);
-    } catch (e) {
-      console.error("应用视频滤镜失败：", e);
-    }
-  }
-  /**
-   * 初始化摄像头
-   * 使用 WebRTC 获取摄像头访问权限，实时应用滤镜并显示在 favicon 中
-   * @returns {Promise<void>}
-   * @throws {Error} 摄像头访问失败时抛出错误
+   * 初始化本地摄像头流
    */
   async initCam() {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("浏览器不支持摄像头");
+    this.video = Object.assign(document.createElement("video"), { autoplay: true });
+    // document.body.appendChild(this.video);
+
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error(
-          "您的浏览器不支持摄像头功能。请使用最新版本的 Chrome、Firefox 或 Edge。",
-        );
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      this.video.srcObject = stream;
 
-      const isLocalhost =
-        location.hostname === "localhost" || location.hostname === "127.0.0.1";
-      const isHttps = location.protocol === "https:";
-
-      if (!isHttps && !isLocalhost) {
-        throw new Error(
-          "摄像头功能需要 HTTPS 环境或 localhost。当前页面协议为：" +
-            location.protocol,
-        );
-      }
-
-      let video = document.createElement("video");
-      video.width = this.width;
-      video.autoplay = "autoplay";
-      document.body.appendChild(video);
-      this.video = video;
-
-      try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user",
-          },
-        });
-
-        this.video.srcObject = mediaStream;
-
-        this.video.onerror = (error) => {
-          console.error("摄像头视频错误：", error);
-          showError("摄像头视频流错误，请检查摄像头是否正常工作。");
-        };
-
-        // 使用 requestAnimationFrame 并限制帧率
-        const updateFrame = (timestamp) => {
-          if (!this.video || !this.video.srcObject) return;
-
-          if (timestamp - this.lastCameraFrame >= this.cameraFrameInterval) {
-            if (this.video.readyState >= this.video.HAVE_CURRENT_DATA) {
-              this.videoToImage();
-            }
-            this.lastCameraFrame = timestamp;
-          }
-
-          requestAnimationFrame(updateFrame);
-        };
-
-        this.video.addEventListener(
-          "loadeddata",
-          () => {
-            requestAnimationFrame(updateFrame);
-          },
-          { once: true }
-        );
-
-        console.log("摄像头初始化成功");
-        return true;
-      } catch (getUserMediaError) {
-        if (this.video && this.video.parentNode) {
-          this.video.parentNode.removeChild(this.video);
+      const loop = (ts) => {
+        if (!this.video) return;
+        if (ts - this.lastFrame >= this.frameInterval) {
+          if (this.video.readyState >= 2) this.videoToImageByFilter();
+          this.lastFrame = ts;
         }
-        this.video = null;
-
-        let errorMessage = "无法访问摄像头：";
-
-        if (getUserMediaError.name === "NotAllowedError") {
-          errorMessage +=
-            "用户拒绝了摄像头权限请求。请刷新页面并允许摄像头访问。";
-        } else if (getUserMediaError.name === "NotFoundError") {
-          errorMessage += "未找到可用的摄像头设备。";
-        } else if (getUserMediaError.name === "NotReadableError") {
-          errorMessage += "摄像头设备被其他应用程序占用或无法访问。";
-        } else if (getUserMediaError.name === "OverconstrainedError") {
-          errorMessage += "无法满足摄像头参数要求。";
-        } else {
-          errorMessage += getUserMediaError.message || "未知错误。";
-        }
-
-        throw new Error(errorMessage);
-      }
-    } catch (error) {
-      console.error("摄像头初始化失败：", error);
-      showError(error.message);
-      throw error;
+        requestAnimationFrame(loop);
+      };
+      this.video.onloadeddata = () => requestAnimationFrame(loop);
+    } catch (e) {
+      this.video.remove();
+      throw e;
     }
   }
 
   /**
-   * 清理资源
-   * 移除事件监听器、停止视频流、移除DOM元素
+   * 键盘事件处理，用于控制视频进度和音量
+   * @param {KeyboardEvent} e 
+   */
+  handleKeydown(e) {
+    if (!this.video) return;
+    const dir = KEY_MAP[e.code] || KEY_MAP[e.keyCode];
+    if (!dir) return;
+    e.preventDefault();
+    if (dir === 'left') this.video.currentTime -= 5;
+    if (dir === 'right') this.video.currentTime += 5;
+    if (dir === 'up') this.video.volume = Math.min(this.video.volume + 0.1, 1);
+    if (dir === 'down') this.video.volume = Math.max(this.video.volume - 0.1, 0);
+  }
+
+  /**
+   * 直接绘制视频画面到 Favicon（无滤镜）
+   */
+  draw() {
+    this.ctx.clearRect(0, 0, SIDE, SIDE);
+    this.ctx.drawImage(this.video, 0, 0, SIDE, SIDE);
+    setFavico(this.canvas);
+  }
+
+  /**
+   * 带有 Sepia (复古/老照片) 风格滤镜的视频渲染
+   * 提取画面像素数据，经过矩阵转换后再推送到 Favicon
+   */
+  videoToImageByFilter() {
+    if (!this.video) return;
+    this.ctx.drawImage(this.video, 0, 0, SIDE, SIDE);
+    const imgData = this.ctx.getImageData(0, 0, SIDE, SIDE);
+    const d = imgData.data;
+
+    // 像素级处理：Sepia 滤镜算法
+    for (let i = 0; i < d.length; i += 4) {
+      let r = d[i], g = d[i+1], b = d[i+2];
+      d[i]   = (r * 0.393) + (g * 0.769) + (b * 0.189);
+      d[i+1] = (r * 0.349) + (g * 0.686) + (b * 0.168);
+      d[i+2] = (r * 0.272) + (g * 0.534) + (b * 0.131);
+    }
+    this.ctx.putImageData(imgData, 0, 0);
+    setFavico(this.canvas);
+  }
+
+  /**
+   * 更新网页 Title 为当前视频播放进度
+   */
+  updateProgress() {
+    const { currentTime: c, duration: d } = this.video;
+    if (d > 0) {
+      const fmt = s => new Date(s * 1000).toISOString().substr(14, 5);
+      document.title = `${fmt(c)} / ${fmt(d)} (${((c/d)*100).toFixed(1)}%)`;
+    }
+  }
+
+  /**
+   * 销毁并清理事件和媒体流
    */
   cleanup() {
-    if (this._isCleaningUp !== undefined) {
-      this._isCleaningUp = true;
-    }
-    if (this._updateFrameActive !== undefined) {
-      this._updateFrameActive = false;
-    }
-
-    if (this._animationFrameId) {
-      cancelAnimationFrame(this._animationFrameId);
-      this._animationFrameId = null;
-    }
-
-    if (this._keydownHandler) {
-      document.removeEventListener("keydown", this._keydownHandler);
-      this._keydownHandler = null;
-    }
-
+    document.removeEventListener("keydown", this._keydownHandler);
     if (this.video) {
-      try {
-        this.video.onerror = null;
-        this.video.onloadeddata = null;
-        this.video.ontimeupdate = null;
-
-        if (this.video.srcObject) {
-          const tracks = this.video.srcObject.getTracks();
-          tracks.forEach((track) => track.stop());
-        }
-
-        this.video.pause();
-        this.video.src = "";
-        this.video.srcObject = null;
-
-        if (this.video.parentNode) {
-          this.video.parentNode.removeChild(this.video);
-        }
-      } catch (e) {
-        console.error("清理视频元素失败：", e);
-      }
-
+      if (this.video.srcObject) this.video.srcObject.getTracks().forEach(t => t.stop());
+      this.video.pause();
+      this.video.remove();
       this.video = null;
     }
-
-    if (this.canvas && this.canvas.parentNode) {
-      try {
-        this.canvas.parentNode.removeChild(this.canvas);
-      } catch (e) {
-        console.error("移除主画布失败：", e);
-      }
-    }
-
-    if (this.canvasFilter && this.canvasFilter.parentNode) {
-      try {
-        this.canvasFilter.parentNode.removeChild(this.canvasFilter);
-      } catch (e) {
-        console.error("移除滤镜画布失败：", e);
-      }
-    }
-
   }
 }
 
 /**
- * 自动初始化逻辑
- * 根据全局变量 window.ictype 的值自动初始化相应功能：
- * - 'video': 视频播放模式（可通过 window.vurl 指定视频URL）
- * - 'camera': 摄像头模式
- * - 'snake': 贪吃蛇游戏模式（自动加载 game.js）
+ * Favicon 挂件初始化入口
+ * @param {string} type - 'video' | 'camera' | 'snake'
  */
-
-if (window.ictype === "video") {
-  try {
-    var m = new Icon();
-    m.initVideo(window.vurl).catch((error) => {
-      console.error("视频初始化失败：", error);
-      if (window.__faviconInstances.icon) {
-        showError("视频加载失败：" + (error.message || "未知错误"));
-      }
-    });
-  } catch (error) {
-    console.error("视频模式初始化异常：", error);
+function initFavicon(type) {
+  cleanupAll();
+  if (type === "video") {
+    const url = prompt('请输入视频地址：', 'lol.mp4');
+    if (url) new Icon().initVideo(url).catch(e => alert(e.message));
+  } else if (type === "camera") {
+    new Icon().initCam().catch(e => alert(e.message));
+  } else if (type === "snake") {
+    waitFor(() => typeof SnakeGame !== "undefined", () => new SnakeGame().init());
   }
-} else if (window.ictype === "camera") {
-  try {
-    var m = new Icon();
-    m.initCam().catch((error) => {
-      console.error("摄像头初始化失败：", error);
-    });
-  } catch (error) {
-    console.error("摄像头模式初始化异常：", error);
-  }
-} else if (window.ictype === "snake") {
-  // 贪吃蛇游戏模式 - 等待 game.js 加载完成后初始化
-  waitForModule(
-    () => typeof SnakeGame !== "undefined",
-    () => {
-      try {
-        var game = new SnakeGame();
-        game.init();
-      } catch (error) {
-        console.error("贪吃蛇游戏初始化异常：", error);
-      }
-    }
-  );
 }
+
+window.__initFavicon = initFavicon;
+if (window.ictype) initFavicon(window.ictype);
