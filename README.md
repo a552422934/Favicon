@@ -28,7 +28,7 @@
 ###  方式二：CDN 引入
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.2.0/icon.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.2.1/icon.js"></script>
 ```
 
 ## 📖 使用指南

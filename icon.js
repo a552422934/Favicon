@@ -2,7 +2,7 @@
  * Favicon 交互库 - 核心文件
  * 功能：视频播放、摄像头监控、游戏
  * @author a552422934
- * @version 0.4.3
+ * @version 1.2.1
  */
 
 import "./game.js";
@@ -79,6 +79,7 @@ class Icon {
     this.frameInterval = 100; // 帧间隔时间（100ms 约等于 10fps，适合 favicon）
     this.lastFrame = 0; // 记录上一帧的时间戳
     this.filterMode = 'none'; // 滤镜模式：'none' | 'sepia' | 'grayscale' | 'invert' | 'contrast' | 'brightness'
+    this.mirror = false; // 是否水平镜像画面（摄像头模式需开启，使画面方向与用户实际操作一致）
   }
 
   /**
@@ -116,6 +117,7 @@ class Icon {
   async initCam() {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("浏览器不支持摄像头");
     this.video = Object.assign(document.createElement("video"), { autoplay: true, muted: true, playsInline: true });
+    this.mirror = true; // 摄像头画面水平镜像，修正画面方向与用户实际操作相反的问题
     // document.body.appendChild(this.video);
 
     try {
@@ -286,7 +288,16 @@ class Icon {
    */
   videoToImageByFilter() {
     if (!this.video) return;
-    this.ctx.drawImage(this.video, 0, 0, SIDE, SIDE);
+    if (this.mirror) {
+      // 摄像头模式：水平镜像绘制，使画面中的左右方向与用户实际操作一致
+      this.ctx.save();
+      this.ctx.translate(SIDE, 0);
+      this.ctx.scale(-1, 1);
+      this.ctx.drawImage(this.video, 0, 0, SIDE, SIDE);
+      this.ctx.restore();
+    } else {
+      this.ctx.drawImage(this.video, 0, 0, SIDE, SIDE);
+    }
     const imgData = this.ctx.getImageData(0, 0, SIDE, SIDE);
     
     // 应用选定的滤镜
