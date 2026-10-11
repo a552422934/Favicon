@@ -88,13 +88,20 @@ class Icon {
    */
   async initVideo(url) {
     this.video = Object.assign(document.createElement("video"), {
-      controls: true, crossOrigin: "anonymous", autoplay: true, volume: 0.5, src: url
+      controls: true, crossOrigin: "anonymous", autoplay: true, volume: 0.5, preload: "auto", src: url
     });
     // document.body.appendChild(this.video);
 
     return new Promise((resolve, reject) => {
-      // 监听视频数据加载完成
+      let timer = null;
+      // 加载失败：清理超时计时器，并给出可读提示（第三方地址常见为跨域限制）
+      this.video.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error("视频加载失败。若为第三方地址，请确认该服务器允许跨域(CORS)访问"));
+      };
+      // 监听视频首帧就绪
       this.video.onloadeddata = () => {
+        clearTimeout(timer);
         this.video.ontimeupdate = () => {
           if (Date.now() - this.lastFrame >= this.frameInterval) {
             this.videoToImageByFilter();
@@ -106,8 +113,10 @@ class Icon {
         document.addEventListener("keydown", this._keydownHandler);
         resolve();
       };
-      this.video.onerror = () => reject(new Error("视频加载失败"));
-      setTimeout(() => this.video && this.video.readyState < 2 && reject(new Error("加载超时")), 10000);
+      // 兜底超时：大体积或网络较慢的视频放宽到 30 秒，避免误判为加载失败
+      timer = setTimeout(() => {
+        if (this.video && this.video.readyState < 2) reject(new Error("加载超时，请检查视频地址或网络连接"));
+      }, 30000);
     });
   }
 
