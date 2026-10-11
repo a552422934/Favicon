@@ -25,7 +25,7 @@
 
 这种方式最方便，可以在任何网页上快速启动功能！
 
-###  方式二：CDN 引入
+### 方式二：CDN 引入
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/a552422934/Favicon@1.2.1/icon.js"></script>
@@ -42,21 +42,18 @@
 - **← / →**：快退/快进 5 秒
 - **↑ / ↓**：增加/减少音量 10%
 
-![](img/01-video.gif)
-
 ### 摄像头模式
 
 摄像头会自动开启并显示画面，按数字键可切换不同的滤镜效果：
-- **1-6**：切换不同滤镜（包括灰色、反色、黑白、怀旧等）
 
-![](img/02-cam.gif)
-![](img/02-cam-filter.gif)
+- **1-6**：切换不同滤镜（包括灰色、反色、黑白、怀旧等）
 
 ### 游戏模式
 
-游戏模式包含两款经典游戏，可以通过键盘数字键无缝切换：
+游戏模式包含两款经典游戏，可以通过数字1、2键切换：
 
 #### 🐍 贪吃蛇游戏
+
 **游戏规则**：
 
 - 使用方向键控制蛇的移动
@@ -65,7 +62,9 @@
 - 最高分保存在 localStorage 中
 
 #### 🧱 打砖块游戏
+
 **游戏规则**：
+
 - 使用 ← / → 方向键控制挡板移动
 - 反弹小球击碎所有砖块
 - 球触底则游戏结束
@@ -73,21 +72,22 @@
 - 最高分保存在 localStorage 中
 
 **游戏切换**：
+
 - **按 1**：切换到贪吃蛇游戏
 - **按 2**：切换到打砖块游戏
-
-![](img/03-snake.gif)
 
 ## 🔧 详细配置
 
 ### 全局配置变量
-| 变量名 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `window.ictype` | string | - | 必需：`'video'`、`'camera'` 或 `'game'` |
+
+| 变量名             | 类型     | 默认值 | 说明                                 |
+| --------------- | ------ | --- | ---------------------------------- |
+| `window.ictype` | string | -   | 必需：`'video'`、`'camera'` 或 `'game'` |
 
 ### API 参考
 
 #### Icon 类
+
 ```javascript
 const icon = new Icon();
 
@@ -102,6 +102,7 @@ icon.videoToImageByFilter();
 ```
 
 #### SnakeGame 类
+
 ```javascript
 const snakeGame = new SnakeGame();
 
@@ -116,6 +117,7 @@ snakeGame.setFood();
 ```
 
 #### BreakoutGame 类
+
 ```javascript
 const breakoutGame = new BreakoutGame();
 
@@ -127,6 +129,7 @@ breakoutGame.handleKey(event, isDown);
 ```
 
 ### 书签栏脚本原理
+
 书签栏中的脚本会检测是否已加载 Favicon 库，如果未加载则动态注入 CDN 脚本，然后初始化指定模式。这使得你可以在任何网页上使用这些功能。
 
 ## 📁 项目结构
@@ -158,6 +161,7 @@ Favicon/
 5. 开启 Pull Request
 
 ### 开发注意事项
+
 - 保持代码简洁，使用中文注释
 - 确保所有功能在主流浏览器中正常工作
 - 添加新功能时更新 README.md 和 CHANGELOG.md
@@ -175,11 +179,11 @@ Favicon/
 ## 📞 联系方式
 
 - GitHub: [@a552422934](https://github.com/a552422934)
-- 项目地址: [https://github.com/a552422934/Favicon](https://github.com/a552422934/Favicon)
+- 项目地址: <https://github.com/a552422934/Favicon>
 
----
+***
 
-**温馨提示**：本工具旨在提供有趣的开发体验，请在合理合法的范围内使用。摸鱼虽好，可不要耽误正事哦~ 😉
+**温馨提示**：本工具旨在提供有趣的开发体验，请在合理合法的范围内使用。摸鱼虽好，可不要耽误正事哦\~ 😉
 
 <p align="center">
   <sub>Made with ❤️ by a552422934</sub>
